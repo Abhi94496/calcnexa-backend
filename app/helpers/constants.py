@@ -1,0 +1,9 @@
+class SUCCESS_MSGS:
+    GREETING_SAVED = "greetings saved"
+
+
+class ERROR_MSGS:
+    INTERNAL_SERVER_ERROR = "Internal server error"
+    GREETING_SAVED_UNSUCESSFUL = "GREETING SAVED UNSUCCESSFUL"
+
+
