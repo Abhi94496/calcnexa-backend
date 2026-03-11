@@ -12,12 +12,49 @@ async def signupStart(data, db: Session):
         result = await authServices.signupStart(phone, email, db)
 
         return ResponseHelper.success(
-            message="Signup started successfully",
+            message= SUCCESS_MSGS.SIGNUP_START_SUCCESSFUL, 
             data=result
         )
 
     except Exception as e:
         return ResponseHelper.error(
             message=str(e),
-            error_type="SIGNUP_START_FAILED"
+            error_type=ERROR_MSGS.SIGNUP_START_FAILED
         )
+    
+
+async def signupDetails(data, db: Session):
+    result = await authServices.signupDetails(data, db)
+    if result.get("status") == "error":
+        return result
+    
+    return ResponseHelper.success(
+        message= SUCCESS_MSGS.DETAILS_SAVED, 
+        data=result
+    )
+
+async def signupPhoto(data, db):
+
+    result = await authServices.signupPhoto(data, db)
+
+    if result.get("status") == "error":
+        return result
+
+    return ResponseHelper.success(
+        message=SUCCESS_MSGS.PHOTO_SAVED_SUCCESFUL,
+        data=result
+    )
+
+
+
+async def signupComplete(data, db):
+
+    result = await authServices.signupComplete(data, db)
+
+    # if service returned error
+    if result.get("status") == "error":
+        return result
+
+    return ResponseHelper.success(
+        message= SUCCESS_MSGS.SIGNUP_SUCCESSFUL
+    )

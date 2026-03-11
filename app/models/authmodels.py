@@ -16,6 +16,7 @@ class SignupSession(base):
     first_name = Column(String(100), nullable=True)
     last_name = Column(String(100), nullable=True)
     organization_name = Column(String(255), nullable=True)
+    password = Column(String, nullable=True)
 
     profile_photo_url = Column(String, nullable=True)
     photo_skipped = Column(Boolean, default=False)
@@ -45,6 +46,7 @@ class VerifiedUser(base):
 
     profile_photo_url = Column(String, nullable=True)
     photo_skipped = Column(Boolean, default=False)
+    password = Column(String, nullable=True)
 
     email_verified = Column(Boolean, default=False)
     phone_verified = Column(Boolean, default=False)

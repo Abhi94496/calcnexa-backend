@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from app.models.authmodels import SignupSession, VerifiedUser
 from app.helpers.response_helper import ResponseHelper
 from app.helpers.constants import ERROR_TYPES, ERROR_MSGS
+from app.middleware.security import hash_password
 
 async def signupStart(phone: str, email: str, db: Session):
     # validation
@@ -52,3 +53,145 @@ async def signupStart(phone: str, email: str, db: Session):
         "uuid": str(new_session.id),
         "stage": new_session.stage
     }
+
+# --------------------------------------------------------------------------------------------------
+
+async def signupDetails(data, db):
+
+    # Check signup session exists
+    session = db.query(SignupSession).filter(
+        SignupSession.id == data.uuid).first()
+
+    if not session:
+        return ResponseHelper.error(
+            message=ERROR_MSGS.SOMETHING_WENT_WRONG
+        )
+
+    # Check user already exists in verified users
+    existing_user = db.query(VerifiedUser).filter(
+        (VerifiedUser.phone == data.phone) |
+        (VerifiedUser.email == data.email)).first()
+
+    if existing_user:
+        return ResponseHelper.error(
+            message=ERROR_MSGS.USER_ALREADY_EXIST
+        )
+    hashed_password = hash_password(data.password)
+    # Update signup session
+    session.phone = data.phone
+    session.email = data.email
+    session.first_name = data.first_name
+    session.last_name = data.last_name
+    session.organization_name = data.organization_name
+    session.password = hashed_password
+    session.stage = 1
+
+    db.commit()
+    db.refresh(session)
+
+    return {
+        "uuid": str(session.id),
+        "stage": session.stage
+    }
+
+# --------------------------------------------------------------------------------------------------
+
+async def signupPhoto(data, db):
+
+    session = db.query(SignupSession).filter(
+        SignupSession.id == data.uuid
+    ).first()
+
+    if not session:
+        return ResponseHelper.error(
+            message=ERROR_MSGS.SOMETHING_WENT_WRONG
+        )
+
+    # if photo exists
+    if data.profile_photo_url:
+        session.profile_photo_url = data.profile_photo_url
+        session.photo_skipped = False
+    else:
+        session.photo_skipped = True
+
+    session.stage = 2
+
+    db.commit()
+    db.refresh(session)
+
+    return {
+        "uuid": str(session.id),
+        "stage": session.stage,
+        # "photo_skipped": session.photo_skipped
+    }
+
+
+# --------------------------------------------------------------------------------------------------
+
+async def signupComplete(data, db):
+
+    try:
+
+        # 1️⃣ Check if user already verified (idempotent check)
+        verified_user = db.query(VerifiedUser).filter(
+            VerifiedUser.id == data.uuid
+        ).first()
+
+        if verified_user:
+            return {
+                "user_id": str(verified_user.id)
+            }
+
+        # 2️⃣ Check signup session
+        session = db.query(SignupSession).filter(
+            SignupSession.id == data.uuid
+        ).first()
+
+        if not session:
+            return ResponseHelper.error(
+                message= ERROR_MSGS.SOMETHING_WENT_WRONG
+            )
+
+        # 3️⃣ Ensure signup steps completed
+        if session.stage < 2:
+            return ResponseHelper.error(
+                message=ERROR_MSGS.INVALID_USER
+            )
+
+        # 4️⃣ Prevent duplicate email/phone
+        existing_user = db.query(VerifiedUser).filter(
+            (VerifiedUser.phone == session.phone) |
+            (VerifiedUser.email == session.email)
+        ).first()
+
+        if existing_user:
+            return {
+                "user_id": str(existing_user.id)
+            }
+        
+        # 5️⃣ Create verified user
+        new_user = VerifiedUser(
+            id=session.id,
+            phone=session.phone,
+            email=session.email,
+            first_name=session.first_name,
+            last_name=session.last_name,
+            organization_name=session.organization_name,
+            profile_photo_url=session.profile_photo_url,
+            photo_skipped=session.photo_skipped,
+            password=session.password 
+        )
+
+        db.add(new_user)
+        # 6️⃣ Delete signup session
+        # db.delete(session)
+        db.commit()
+        return {
+            "user_id": str(new_user.id)
+        }
+    
+    except Exception as e:
+        db.rollback()
+        return ResponseHelper.error(
+            message=ERROR_MSGS.SIGNUP_FAILED
+        )

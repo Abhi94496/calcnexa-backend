@@ -12,3 +12,11 @@ class ISignupDetailsRequest(BaseModel):
     first_name: str
     last_name: str
     organization_name: str
+    password: str
+
+class ISignupPhoto(BaseModel):
+    uuid: str
+    profile_photo_url : Optional[str] = None
+
+class ISignupComplete(BaseModel):
+    uuid: str
