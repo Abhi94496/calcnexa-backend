@@ -57,3 +57,18 @@ class VerifiedUser(base):
         server_default=func.now(),
         onupdate=func.now()
     )
+
+
+class SigninTransaction(base):
+    __tablename__ = "signin_transactions"
+
+    transcid = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+
+    email = Column(String(255), nullable=True)
+    phone = Column(String(20), nullable=True)
+
+    userid = Column(UUID(as_uuid=True), nullable=False)
+
+    flow = Column(String(50), default="signin")
+
+    created_at = Column(DateTime(timezone=True), server_default=func.now())

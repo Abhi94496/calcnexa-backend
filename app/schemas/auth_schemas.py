@@ -20,3 +20,12 @@ class ISignupPhoto(BaseModel):
 
 class ISignupComplete(BaseModel):
     uuid: str
+
+#signin 
+
+class ISigninStart(BaseModel):
+    identifier: str
+
+class ISigninVerify(BaseModel):
+    transaction_id: str
+    password: str
