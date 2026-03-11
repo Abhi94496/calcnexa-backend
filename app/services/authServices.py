@@ -1,10 +1,11 @@
 import uuid
 from sqlalchemy.orm import Session
-from app.models.authmodels import SignupSession, VerifiedUser
+from app.models.authmodels import SignupSession, VerifiedUser,SigninTransaction
 from app.helpers.response_helper import ResponseHelper
-from app.helpers.constants import ERROR_TYPES, ERROR_MSGS
+from app.helpers.constants import ERROR_TYPES, ERROR_MSGS,FLOWS
 from app.middleware.security import hash_password
-
+from app.middleware.security import verify_password
+from app.models.authmodels import VerifiedUser, SigninTransaction
 async def signupStart(phone: str, email: str, db: Session):
     # validation
     if not phone and not email:
@@ -195,3 +196,76 @@ async def signupComplete(data, db):
         return ResponseHelper.error(
             message=ERROR_MSGS.SIGNUP_FAILED
         )
+ 
+
+#-------------------------------SIGN IN----------------------------------------------------------
+
+async def signinStart(data, db):
+
+    identifier = data.identifier
+
+    # detect email or phone
+    if "@" in identifier:
+        email = identifier
+        phone = None
+    else:
+        phone = identifier
+        email = None
+
+
+    # check if user exists
+    user = db.query(VerifiedUser).filter(
+        (VerifiedUser.email == email) |
+        (VerifiedUser.phone == phone)
+    ).first()
+
+    if not user:
+        return ResponseHelper.error(
+            message=ERROR_MSGS.INVALID_USER
+        )
+
+
+    # create transaction
+    transaction = SigninTransaction(
+        transcid=uuid.uuid4(),
+        email=email,
+        phone=phone,
+        userid=user.id,
+        flow=FLOWS.SIGNIN
+    )
+
+    db.add(transaction)
+    db.commit()
+    db.refresh(transaction)
+
+
+    return {
+        "transaction_id": str(transaction.transcid)
+    }
+
+
+async def signinVerify(data, db):
+
+    transaction_id = data.transaction_id
+    password = data.password
+
+    transaction = db.query(SigninTransaction).filter(
+        SigninTransaction.transcid == transaction_id
+    ).first()
+
+    if not transaction:
+        return ResponseHelper.error(message="Invalid transaction")
+
+    user = db.query(VerifiedUser).filter(
+        VerifiedUser.id == transaction.userid
+    ).first()
+
+    if not user:
+        return ResponseHelper.error(message="User not found")
+
+    if not verify_password(password, user.password):
+        return ResponseHelper.error(message="Invalid password")
+
+    return {
+        "user_id": str(user.id)
+    }

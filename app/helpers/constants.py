@@ -4,6 +4,9 @@ class SUCCESS_MSGS:
     DETAILS_SAVED = "Details saved"
     PHOTO_SAVED_SUCCESFUL= "Photo step completed"
     SIGNUP_SUCCESSFUL = "Signup completed successfully"
+    SIGNIN_START= "Signin transaction created"    
+    SIGNIN_SUCCESSFULL="Signin successful"
+
 
 class ERROR_MSGS:
     INTERNAL_SERVER_ERROR = "Internal server error"
@@ -26,3 +29,8 @@ class ERROR_TYPES:
     UNAUTHORIZED = "UNAUTHORIZED"
     SOCKET_ERROR = "SOCKET_ERROR"
     INVALID_MOVE = "invalidMove"
+
+class FLOWS:
+    SIGNIN="SignIn"
+    SIGNUP="SIgnUp"
+    FORGET_PASSWORD="Forget_password"

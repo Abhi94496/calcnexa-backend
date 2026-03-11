@@ -58,3 +58,28 @@ async def signupComplete(data, db):
     return ResponseHelper.success(
         message= SUCCESS_MSGS.SIGNUP_SUCCESSFUL
     )
+
+# SIGN IN
+async def signinStart(data, db: Session):
+
+    result = await authServices.signinStart(data, db)
+
+    if result.get("status") == "error":
+        return result
+
+    return ResponseHelper.success(
+        message=SUCCESS_MSGS.SIGNIN_START,
+        data=result
+    )
+
+async def signinVerify(data, db: Session):
+
+    result = await authServices.signinVerify(data, db)
+
+    if result.get("status") == "error":
+        return result
+
+    return ResponseHelper.success(
+        message=SUCCESS_MSGS.SIGNIN_SUCCESSFULL,
+        data=result
+    )

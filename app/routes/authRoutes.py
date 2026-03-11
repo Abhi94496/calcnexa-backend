@@ -1,9 +1,11 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from app.schemas.auth_schemas import ISignupStart, ISignupDetailsRequest, ISignupPhoto, ISignupComplete
+from app.schemas.auth_schemas import ISigninStart, ISigninVerify
 from app.database import get_db
 from app.controllers import authControllers
 
+from app.schemas.auth_schemas import ISigninStart, ISigninVerify
 router = APIRouter()
 
 
@@ -33,3 +35,14 @@ async def signupPhoto(data: ISignupPhoto, db: Session = Depends(get_db)):
 @router.post("/signup/complete")
 async def signupComplete(data: ISignupComplete, db: Session = Depends(get_db)):
     return await authControllers.signupComplete(data, db)
+
+
+
+@router.post("/signin/start")
+async def signinStart(data: ISigninStart, db: Session = Depends(get_db)):
+    return await authControllers.signinStart(data, db)
+
+
+@router.post("/signin/verify")
+async def signinVerify(data: ISigninVerify, db: Session = Depends(get_db)):
+    return await authControllers.signinVerify(data, db)
