@@ -6,6 +6,11 @@ from app.helpers.constants import ERROR_TYPES, ERROR_MSGS,FLOWS
 from app.middleware.security import hash_password
 from app.middleware.security import verify_password
 from app.models.authmodels import VerifiedUser, SigninTransaction
+from app.models.organization_module import Organization, OrgEmployee
+from app.models.roles_modules import Role
+from app.models.authmodels import VerifiedUser, SignupSession
+
+# -----------------------------------------------------------------------------------------
 async def signupStart(phone: str, email: str, db: Session):
     # validation
     if not phone and not email:
@@ -130,10 +135,8 @@ async def signupPhoto(data, db):
 # --------------------------------------------------------------------------------------------------
 
 async def signupComplete(data, db):
-
     try:
 
-        # 1️⃣ Check if user already verified (idempotent check)
         verified_user = db.query(VerifiedUser).filter(
             VerifiedUser.id == data.uuid
         ).first()
@@ -143,23 +146,20 @@ async def signupComplete(data, db):
                 "user_id": str(verified_user.id)
             }
 
-        # 2️⃣ Check signup session
         session = db.query(SignupSession).filter(
             SignupSession.id == data.uuid
         ).first()
 
         if not session:
             return ResponseHelper.error(
-                message= ERROR_MSGS.SOMETHING_WENT_WRONG
+                message=ERROR_MSGS.SOMETHING_WENT_WRONG
             )
 
-        # 3️⃣ Ensure signup steps completed
         if session.stage < 2:
             return ResponseHelper.error(
                 message=ERROR_MSGS.INVALID_USER
             )
 
-        # 4️⃣ Prevent duplicate email/phone
         existing_user = db.query(VerifiedUser).filter(
             (VerifiedUser.phone == session.phone) |
             (VerifiedUser.email == session.email)
@@ -169,34 +169,68 @@ async def signupComplete(data, db):
             return {
                 "user_id": str(existing_user.id)
             }
-        
-        # 5️⃣ Create verified user
+        domain = session.email.split("@")[1]
+        org_name = domain.split(".")[0]
+
+
+        org = db.query(Organization).filter(
+            Organization.domain == domain
+        ).first()
+
+        if org:
+            return ResponseHelper.error(
+                message=ERROR_MSGS.ORGANIZATION_EXIST
+            )
+
+        org = Organization(
+            name=org_name,
+            domain=domain,
+            plan_id=1
+        )
+
+        db.add(org)
+        db.flush()
+
         new_user = VerifiedUser(
             id=session.id,
             phone=session.phone,
             email=session.email,
             first_name=session.first_name,
             last_name=session.last_name,
-            organization_name=session.organization_name,
             profile_photo_url=session.profile_photo_url,
             photo_skipped=session.photo_skipped,
-            password=session.password 
+            password=session.password,
+            org_id=org.id
         )
 
         db.add(new_user)
-        # 6️⃣ Delete signup session
-        # db.delete(session)
+        db.flush()
+
+        employee = OrgEmployee(
+             organization_id=org.id,
+            user_id=new_user.id,
+            email=new_user.email,
+            first_name=new_user.first_name,
+            last_name=new_user.last_name,
+            role_id=1
+            )
+
+        db.add(employee)
+
         db.commit()
+
         return {
-            "user_id": str(new_user.id)
+            "user_id": str(new_user.id),
+            "organization_id": str(org.id),
+            "role_id": 1
         }
-    
+
     except Exception as e:
         db.rollback()
         return ResponseHelper.error(
             message=ERROR_MSGS.SIGNUP_FAILED
         )
- 
+    
 
 #-------------------------------SIGN IN----------------------------------------------------------
 
@@ -243,7 +277,7 @@ async def signinStart(data, db):
         "transaction_id": str(transaction.transcid)
     }
 
-
+# ----------------------------------------------------------------------------------------
 async def signinVerify(data, db):
 
     transaction_id = data.transaction_id
@@ -254,17 +288,17 @@ async def signinVerify(data, db):
     ).first()
 
     if not transaction:
-        return ResponseHelper.error(message="Invalid transaction")
+        return ResponseHelper.error(ERROR_MSGS.INVALID_TRANSACTION)
 
     user = db.query(VerifiedUser).filter(
         VerifiedUser.id == transaction.userid
     ).first()
 
     if not user:
-        return ResponseHelper.error(message="User not found")
+        return ResponseHelper.error(ERROR_MSGS.INVALID_USER)
 
     if not verify_password(password, user.password):
-        return ResponseHelper.error(message="Invalid password")
+        return ResponseHelper.error(ERROR_MSGS.WRONG_PASSWORD)
 
     return {
         "user_id": str(user.id)

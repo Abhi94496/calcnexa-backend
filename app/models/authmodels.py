@@ -20,7 +20,7 @@ class SignupSession(base):
 
     profile_photo_url = Column(String, nullable=True)
     photo_skipped = Column(Boolean, default=False)
-
+    role = Column(Integer, nullable=True)
     stage = Column(Integer, default=0, nullable=False)
 
     created_at = Column(DateTime(timezone=True), server_default=func.now())
@@ -42,8 +42,8 @@ class VerifiedUser(base):
 
     first_name = Column(String(100), nullable=False)
     last_name = Column(String(100), nullable=False)
-    organization_name = Column(String(255), nullable=True)
-
+    org_id = Column(UUID(as_uuid=True), nullable=False)
+    # role = Column(Integer, nullable=False)
     profile_photo_url = Column(String, nullable=True)
     photo_skipped = Column(Boolean, default=False)
     password = Column(String, nullable=True)

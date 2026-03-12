@@ -17,7 +17,10 @@ class ERROR_MSGS:
     USER_ALREADY_EXIST = "User already exists"
     SOMETHING_WENT_WRONG = "Something went wrong"
     INVALID_USER = "Invalid user"
-
+    SIGNUP_FAILED = "Signup failed"
+    ORGANIZATION_EXIST = "Organization already exist"
+    INVALID_TRANSACTION = "Invalid transaction"
+    WRONG_PASSWORD = "Password entered was wrong"
 
 class ERROR_TYPES:
     DATA_NOT_FOUND = "DATA_NOT_FOUND"
