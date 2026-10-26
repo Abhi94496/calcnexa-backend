@@ -6,7 +6,11 @@ class SUCCESS_MSGS:
     SIGNUP_SUCCESSFUL = "Signup completed successfully"
     SIGNIN_START= "Signin transaction created"    
     SIGNIN_SUCCESSFULL="Signin successful"
-
+    PROFILE_FETCH_SUCCESS = "Profile fetched successfully"
+    PROCUREMENT_REQUEST_CREATED = "Purchase request created successfully"
+    PROCUREMENT_REQUESTS_FETCHED = "Purchase requests fetched successfully"
+    PROCUREMENT_REQUEST_FETCHED = "Purchase request fetched successfully"
+    PROCUREMENT_REQUEST_UPDATED = "Purchase request updated successfully"
 
 class ERROR_MSGS:
     INTERNAL_SERVER_ERROR = "Internal server error"
@@ -21,6 +25,7 @@ class ERROR_MSGS:
     ORGANIZATION_EXIST = "Organization already exist"
     INVALID_TRANSACTION = "Invalid transaction"
     WRONG_PASSWORD = "Password entered was wrong"
+    PROCUREMENT_REQUEST_NOT_FOUND = "Purchase request not found"
 
 class ERROR_TYPES:
     DATA_NOT_FOUND = "DATA_NOT_FOUND"

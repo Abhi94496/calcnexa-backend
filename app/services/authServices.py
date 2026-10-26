@@ -9,16 +9,16 @@ from app.models.authmodels import VerifiedUser, SigninTransaction
 from app.models.organization_module import Organization, OrgEmployee
 from app.models.roles_modules import Role
 from app.models.authmodels import VerifiedUser, SignupSession
-
+from app.utils.token import create_access_token
 # -----------------------------------------------------------------------------------------
 async def signupStart(phone: str, email: str, db: Session):
     # validation
     if not phone and not email:
         return ResponseHelper.error(
-            message= ERROR_MSGS.PHONE_MAIL_REQUIRED,
+            message= ERROR_MSGS.PHONE_EMAIL_REQUIRED,
             error_type= ERROR_TYPES.BAD_REQUEST
         )
-
+    print("======")
     # Check verified users
     verified_user = db.query(VerifiedUser).filter(
         (VerifiedUser.phone == phone) |
@@ -30,7 +30,7 @@ async def signupStart(phone: str, email: str, db: Session):
             message= ERROR_MSGS.USER_ALREADY_EXIST,
             error_type= ERROR_TYPES.ALREADY_EXISTS
         )
-
+    print("==iiii==")
     # Check signup session (resume signup)
     signup_session = db.query(SignupSession).filter(
         (SignupSession.phone == phone) |
@@ -278,6 +278,32 @@ async def signinStart(data, db):
     }
 
 # ----------------------------------------------------------------------------------------
+# async def signinVerify(data, db):
+
+#     transaction_id = data.transaction_id
+#     password = data.password
+
+#     transaction = db.query(SigninTransaction).filter(
+#         SigninTransaction.transcid == transaction_id
+#     ).first()
+
+#     if not transaction:
+#         return ResponseHelper.error(ERROR_MSGS.INVALID_TRANSACTION)
+
+#     user = db.query(VerifiedUser).filter(
+#         VerifiedUser.id == transaction.userid
+#     ).first()
+
+#     if not user:
+#         return ResponseHelper.error(ERROR_MSGS.INVALID_USER)
+
+#     if not verify_password(password, user.password):
+#         return ResponseHelper.error(ERROR_MSGS.WRONG_PASSWORD)
+
+#     return {
+#         "user_id": str(user.id)
+#     }
+
 async def signinVerify(data, db):
 
     transaction_id = data.transaction_id
@@ -300,6 +326,27 @@ async def signinVerify(data, db):
     if not verify_password(password, user.password):
         return ResponseHelper.error(ERROR_MSGS.WRONG_PASSWORD)
 
+    access_token = create_access_token(str(user.id))
+
     return {
-        "user_id": str(user.id)
+        "access_token": access_token,
+        "token_type": "bearer"
     }
+
+
+async def getProfile(current_user):
+    return {
+        "id": str(current_user.id),
+        "email": current_user.email,
+        "phone": current_user.phone,
+        "first_name": current_user.first_name,
+        "last_name": current_user.last_name,
+        "org_id": str(current_user.org_id),
+        "profile_photo_url": current_user.profile_photo_url,
+        "photo_skipped": current_user.photo_skipped,
+        "email_verified": current_user.email_verified,
+        "phone_verified": current_user.phone_verified,
+        "created_at": current_user.created_at.isoformat() if current_user.created_at else None,
+        "updated_at": current_user.updated_at.isoformat() if current_user.updated_at else None,
+    }
+

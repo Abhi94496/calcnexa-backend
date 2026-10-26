@@ -5,6 +5,7 @@ from app.helpers.constants import SUCCESS_MSGS, ERROR_MSGS
 
 async def signupStart(data, db: Session):
     try:
+        print(data)
 
         phone = data.phone
         email = data.email
@@ -81,5 +82,17 @@ async def signinVerify(data, db: Session):
 
     return ResponseHelper.success(
         message=SUCCESS_MSGS.SIGNIN_SUCCESSFULL,
+        data=result
+    )
+
+async def getProfile(user):
+
+    result = await authServices.getProfile(user)
+
+    if result.get("status") == "error":
+        return result
+
+    return ResponseHelper.success(
+        message=SUCCESS_MSGS.PROFILE_FETCH_SUCCESS,
         data=result
     )
